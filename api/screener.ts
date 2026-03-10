@@ -1,54 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import YahooFinance from 'yahoo-finance2'
+import { scrapeSP500List } from '../server/scrapers/sp500-list.js'
 
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
-
-const SP500_VALUE_UNIVERSE = [
-  { ticker: 'BRK-B', name: 'Berkshire Hathaway', sector: 'Financials' },
-  { ticker: 'JPM',   name: 'JPMorgan Chase',     sector: 'Financials' },
-  { ticker: 'BAC',   name: 'Bank of America',    sector: 'Financials' },
-  { ticker: 'WFC',   name: 'Wells Fargo',        sector: 'Financials' },
-  { ticker: 'USB',   name: 'US Bancorp',         sector: 'Financials' },
-  { ticker: 'GS',    name: 'Goldman Sachs',      sector: 'Financials' },
-  { ticker: 'JNJ',   name: 'Johnson & Johnson',  sector: 'Healthcare' },
-  { ticker: 'ABT',   name: 'Abbott Labs',        sector: 'Healthcare' },
-  { ticker: 'UNH',   name: 'UnitedHealth',       sector: 'Healthcare' },
-  { ticker: 'CVS',   name: 'CVS Health',         sector: 'Healthcare' },
-  { ticker: 'MRK',   name: 'Merck',              sector: 'Healthcare' },
-  { ticker: 'PFE',   name: 'Pfizer',             sector: 'Healthcare' },
-  { ticker: 'KO',    name: 'Coca-Cola',          sector: 'Consumer Staples' },
-  { ticker: 'PEP',   name: 'PepsiCo',            sector: 'Consumer Staples' },
-  { ticker: 'WMT',   name: 'Walmart',            sector: 'Consumer Staples' },
-  { ticker: 'PG',    name: 'Procter & Gamble',   sector: 'Consumer Staples' },
-  { ticker: 'CL',    name: 'Colgate-Palmolive',  sector: 'Consumer Staples' },
-  { ticker: 'KHC',   name: 'Kraft Heinz',        sector: 'Consumer Staples' },
-  { ticker: 'MCD',   name: "McDonald's",         sector: 'Consumer Discretionary' },
-  { ticker: 'NKE',   name: 'Nike',               sector: 'Consumer Discretionary' },
-  { ticker: 'LOW',   name: "Lowe's",             sector: 'Consumer Discretionary' },
-  { ticker: 'HD',    name: 'Home Depot',         sector: 'Consumer Discretionary' },
-  { ticker: 'COST',  name: 'Costco',             sector: 'Consumer Discretionary' },
-  { ticker: 'XOM',   name: 'ExxonMobil',         sector: 'Energy' },
-  { ticker: 'CVX',   name: 'Chevron',            sector: 'Energy' },
-  { ticker: 'COP',   name: 'ConocoPhillips',     sector: 'Energy' },
-  { ticker: 'CAT',   name: 'Caterpillar',        sector: 'Industrials' },
-  { ticker: 'DE',    name: 'Deere & Co',         sector: 'Industrials' },
-  { ticker: 'MMM',   name: '3M',                 sector: 'Industrials' },
-  { ticker: 'HON',   name: 'Honeywell',          sector: 'Industrials' },
-  { ticker: 'GE',    name: 'GE Aerospace',       sector: 'Industrials' },
-  { ticker: 'AAPL',  name: 'Apple',              sector: 'Technology' },
-  { ticker: 'MSFT',  name: 'Microsoft',          sector: 'Technology' },
-  { ticker: 'GOOGL', name: 'Alphabet',           sector: 'Technology' },
-  { ticker: 'INTC',  name: 'Intel',              sector: 'Technology' },
-  { ticker: 'CSCO',  name: 'Cisco',              sector: 'Technology' },
-  { ticker: 'IBM',   name: 'IBM',                sector: 'Technology' },
-  { ticker: 'LIN',   name: 'Linde',              sector: 'Materials' },
-  { ticker: 'NEM',   name: 'Newmont',            sector: 'Materials' },
-  { ticker: 'NEE',   name: 'NextEra Energy',     sector: 'Utilities' },
-  { ticker: 'D',     name: 'Dominion Energy',    sector: 'Utilities' },
-  { ticker: 'VZ',    name: 'Verizon',            sector: 'Communications' },
-  { ticker: 'T',     name: 'AT&T',               sector: 'Communications' },
-  { ticker: 'CMCSA', name: 'Comcast',            sector: 'Communications' },
-]
 
 function safe(v: number | null | undefined): number | null {
   if (v == null || isNaN(v) || !isFinite(v)) return null
@@ -97,7 +51,7 @@ interface StockScore {
   profitMargin: number | null; score: number; rating: string
 }
 
-async function fetchChunk(tickers: typeof SP500_VALUE_UNIVERSE) {
+async function fetchChunk(tickers: { ticker: string; name: string; sector: string }[]) {
   return Promise.allSettled(
     tickers.map(async ({ ticker, name, sector }) => {
       try {
@@ -134,25 +88,53 @@ async function fetchChunk(tickers: typeof SP500_VALUE_UNIVERSE) {
   )
 }
 
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
-  const chunkSize = Math.ceil(SP500_VALUE_UNIVERSE.length / 3)
-  const chunks = [
-    SP500_VALUE_UNIVERSE.slice(0, chunkSize),
-    SP500_VALUE_UNIVERSE.slice(chunkSize, chunkSize * 2),
-    SP500_VALUE_UNIVERSE.slice(chunkSize * 2),
-  ]
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1)
+    const pageSize = Math.min(100, Math.max(10, parseInt(req.query.pageSize as string) || 50))
+    const sectorFilter = (req.query.sector as string) || ''
 
-  const chunkResults = await Promise.all(chunks.map(fetchChunk))
-  const results: StockScore[] = []
+    let allCompanies = await scrapeSP500List()
 
-  for (const chunk of chunkResults) {
-    for (const result of chunk) {
-      if (result.status === 'fulfilled' && result.value) {
-        results.push(result.value)
+    if (sectorFilter && sectorFilter !== 'All') {
+      allCompanies = allCompanies.filter(c => c.sector === sectorFilter)
+    }
+
+    const totalCount = allCompanies.length
+    const totalPages = Math.ceil(totalCount / pageSize)
+    const startIdx = (page - 1) * pageSize
+    const pageCompanies = allCompanies.slice(startIdx, startIdx + pageSize)
+
+    const chunkSize = Math.ceil(pageCompanies.length / 3)
+    const chunks = [
+      pageCompanies.slice(0, chunkSize),
+      pageCompanies.slice(chunkSize, chunkSize * 2),
+      pageCompanies.slice(chunkSize * 2),
+    ].filter(c => c.length > 0)
+
+    const chunkResults = await Promise.all(chunks.map(fetchChunk))
+    const results: StockScore[] = []
+
+    for (const chunk of chunkResults) {
+      for (const result of chunk) {
+        if (result.status === 'fulfilled' && result.value) {
+          results.push(result.value)
+        }
       }
     }
-  }
 
-  results.sort((a, b) => b.score - a.score)
-  res.json({ stocks: results })
+    results.sort((a, b) => b.score - a.score)
+    res.json({
+      stocks: results,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+      },
+    })
+  } catch (err) {
+    console.error('Screener failed:', err)
+    res.status(500).json({ error: 'Failed to fetch screener data' })
+  }
 }

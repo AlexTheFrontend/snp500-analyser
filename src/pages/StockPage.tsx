@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import StockChart from '../components/StockChart'
 import FundamentalsPanel from '../components/FundamentalsPanel'
+import NewsPanel from '../components/NewsPanel'
 import { ArrowLeft, TrendingUp, TrendingDown, Loader } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -17,6 +18,7 @@ export default function StockPage() {
   const { ticker } = useParams<{ ticker: string }>()
   const navigate = useNavigate()
   const [data, setData]     = useState<any>(null)
+  const [metrics, setMetrics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]   = useState<string | null>(null)
 
@@ -31,6 +33,12 @@ export default function StockPage() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+
+    // Fetch supplemental metrics (non-blocking)
+    fetch(`/api/stock/${ticker}/metrics`)
+      .then(r => r.json())
+      .then(d => setMetrics(d.metrics))
+      .catch(() => setMetrics(null))
   }, [ticker])
 
   if (loading) return (
@@ -122,6 +130,9 @@ export default function StockPage() {
         <div className="space-y-4">
           <StockChart ticker={ticker!} />
 
+          {/* News & Sentiment */}
+          <NewsPanel ticker={ticker!} />
+
           {/* Description */}
           {data.description && (
             <div className="bg-bg-card border border-bg-border rounded-xl p-4">
@@ -137,7 +148,7 @@ export default function StockPage() {
 
         {/* Fundamentals sidebar */}
         <div>
-          <FundamentalsPanel data={data} />
+          <FundamentalsPanel data={data} supplemental={metrics} />
         </div>
       </div>
     </div>

@@ -18,6 +18,30 @@ interface QuoteData {
   numberOfAnalysts: number | null; beta: number | null; currency: string
 }
 
+interface FinvizMetrics {
+  insiderOwnership: number | null
+  insiderTransactions: number | null
+  institutionalOwnership: number | null
+  institutionalTransactions: number | null
+  shortFloat: number | null
+  shortRatio: number | null
+  analystTargetPrice: number | null
+  analystRecommendation: number | null
+  earningsDate: string | null
+  perfWeek: number | null
+  perfMonth: number | null
+  perfQuarter: number | null
+  perfHalfYear: number | null
+  perfYear: number | null
+  perfYTD: number | null
+  volatilityWeek: number | null
+  volatilityMonth: number | null
+  sma20: number | null
+  sma50: number | null
+  sma200: number | null
+  rsi14: number | null
+}
+
 function fmt(v: number | null, opts: Intl.NumberFormatOptions = {}): string {
   if (v == null) return '\u2014'
   return v.toLocaleString('en-US', opts)
@@ -77,7 +101,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export default function FundamentalsPanel({ data }: { data: QuoteData }) {
+export default function FundamentalsPanel({ data, supplemental }: { data: QuoteData; supplemental?: FinvizMetrics | null }) {
   const score  = computeScore({ pe: data.pe, pb: data.pb, roe: data.roe, debtEquity: data.debtEquity, profitMargin: data.profitMargin })
   const rating = getRating(score)
   const ratingColors: Record<string, string> = {
@@ -191,6 +215,89 @@ export default function FundamentalsPanel({ data }: { data: QuoteData }) {
             sentiment={upside != null ? (upside > 10 ? 'good' : upside < -5 ? 'bad' : 'neutral') : undefined} />
           <MetricRow label="Recommendation"   value={(data.recommendation ?? '\u2014').toUpperCase()} />
           <MetricRow label="# of Analysts"    value={String(data.numberOfAnalysts ?? '\u2014')} />
+        </Section>
+      )}
+
+      {/* Supplemental: Ownership & Short Interest (from Finviz) */}
+      {supplemental && (supplemental.insiderOwnership != null || supplemental.institutionalOwnership != null || supplemental.shortFloat != null) && (
+        <Section title="Ownership & Short Interest">
+          {supplemental.insiderOwnership != null && (
+            <MetricRow label="Insider Ownership" value={fmtPct(supplemental.insiderOwnership)} />
+          )}
+          {supplemental.insiderTransactions != null && (
+            <MetricRow label="Insider Trans" value={fmtPct(supplemental.insiderTransactions)}
+              sentiment={supplemental.insiderTransactions > 0 ? 'good' : supplemental.insiderTransactions < 0 ? 'bad' : 'neutral'} />
+          )}
+          {supplemental.institutionalOwnership != null && (
+            <MetricRow label="Institutional Own" value={fmtPct(supplemental.institutionalOwnership)} />
+          )}
+          {supplemental.institutionalTransactions != null && (
+            <MetricRow label="Institutional Trans" value={fmtPct(supplemental.institutionalTransactions)}
+              sentiment={supplemental.institutionalTransactions > 0 ? 'good' : supplemental.institutionalTransactions < 0 ? 'bad' : 'neutral'} />
+          )}
+          {supplemental.shortFloat != null && (
+            <MetricRow label="Short Float" value={fmtPct(supplemental.shortFloat)}
+              sentiment={supplemental.shortFloat > 0.1 ? 'bad' : supplemental.shortFloat < 0.03 ? 'good' : 'neutral'} />
+          )}
+          {supplemental.shortRatio != null && (
+            <MetricRow label="Short Ratio" value={supplemental.shortRatio.toFixed(2)}
+              sentiment={supplemental.shortRatio > 5 ? 'bad' : 'neutral'} />
+          )}
+        </Section>
+      )}
+
+      {/* Supplemental: Performance (from Finviz) */}
+      {supplemental && (supplemental.perfWeek != null || supplemental.perfMonth != null) && (
+        <Section title="Performance">
+          {supplemental.perfWeek != null && (
+            <MetricRow label="1 Week" value={fmtPct(supplemental.perfWeek)}
+              sentiment={supplemental.perfWeek > 0 ? 'good' : supplemental.perfWeek < 0 ? 'bad' : 'neutral'} />
+          )}
+          {supplemental.perfMonth != null && (
+            <MetricRow label="1 Month" value={fmtPct(supplemental.perfMonth)}
+              sentiment={supplemental.perfMonth > 0 ? 'good' : supplemental.perfMonth < 0 ? 'bad' : 'neutral'} />
+          )}
+          {supplemental.perfQuarter != null && (
+            <MetricRow label="3 Months" value={fmtPct(supplemental.perfQuarter)}
+              sentiment={supplemental.perfQuarter > 0 ? 'good' : supplemental.perfQuarter < 0 ? 'bad' : 'neutral'} />
+          )}
+          {supplemental.perfHalfYear != null && (
+            <MetricRow label="6 Months" value={fmtPct(supplemental.perfHalfYear)}
+              sentiment={supplemental.perfHalfYear > 0 ? 'good' : supplemental.perfHalfYear < 0 ? 'bad' : 'neutral'} />
+          )}
+          {supplemental.perfYear != null && (
+            <MetricRow label="1 Year" value={fmtPct(supplemental.perfYear)}
+              sentiment={supplemental.perfYear > 0 ? 'good' : supplemental.perfYear < 0 ? 'bad' : 'neutral'} />
+          )}
+          {supplemental.perfYTD != null && (
+            <MetricRow label="YTD" value={fmtPct(supplemental.perfYTD)}
+              sentiment={supplemental.perfYTD > 0 ? 'good' : supplemental.perfYTD < 0 ? 'bad' : 'neutral'} />
+          )}
+        </Section>
+      )}
+
+      {/* Supplemental: Technical (from Finviz) */}
+      {supplemental && (supplemental.rsi14 != null || supplemental.sma20 != null) && (
+        <Section title="Technical">
+          {supplemental.rsi14 != null && (
+            <MetricRow label="RSI (14)" value={supplemental.rsi14.toFixed(1)}
+              sentiment={supplemental.rsi14 > 70 ? 'bad' : supplemental.rsi14 < 30 ? 'good' : 'neutral'} />
+          )}
+          {supplemental.sma20 != null && (
+            <MetricRow label="SMA 20" value={fmtPct(supplemental.sma20)}
+              sentiment={supplemental.sma20 > 0 ? 'good' : 'bad'} />
+          )}
+          {supplemental.sma50 != null && (
+            <MetricRow label="SMA 50" value={fmtPct(supplemental.sma50)}
+              sentiment={supplemental.sma50 > 0 ? 'good' : 'bad'} />
+          )}
+          {supplemental.sma200 != null && (
+            <MetricRow label="SMA 200" value={fmtPct(supplemental.sma200)}
+              sentiment={supplemental.sma200 > 0 ? 'good' : 'bad'} />
+          )}
+          {supplemental.earningsDate && (
+            <MetricRow label="Earnings Date" value={supplemental.earningsDate} />
+          )}
         </Section>
       )}
     </div>
