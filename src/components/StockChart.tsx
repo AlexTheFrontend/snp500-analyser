@@ -158,7 +158,7 @@ export default function StockChart({ ticker }: Props) {
         priceLineVisible: false,
       })
       as.setData(data.map(d => ({ time: d.time as unknown as string, value: d.close })))
-      seriesRef.current = as as ISeriesApi<'Line'>
+      seriesRef.current = as as unknown as ISeriesApi<'Line'>
 
       ls.setData(data.map(d => ({ time: d.time as unknown as string, value: d.close })))
     }

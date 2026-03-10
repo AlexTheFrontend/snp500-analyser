@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { TrendingUp, TrendingDown, ChevronUp, ChevronDown, Filter, Loader, RefreshCw } from 'lucide-react'
+import { ChevronUp, ChevronDown, Filter, Loader, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
 import type { StockScore } from '../lib/sp500'
 
