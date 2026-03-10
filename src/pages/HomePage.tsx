@@ -40,7 +40,7 @@ export default function HomePage() {
           stocks, fast.
         </h1>
         <p className="text-text-secondary text-sm md:text-base max-w-lg mb-12 leading-relaxed">
-          10-year price history, fundamental metrics, and a value scoring algorithm
+          10 years of price history, fundamental metrics, and a value scoring algorithm
           that surfaces cheap stocks before the market notices.
         </p>
 
