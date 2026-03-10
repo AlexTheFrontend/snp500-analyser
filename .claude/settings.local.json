@@ -7,7 +7,8 @@
       "Bash(npx vite:*)",
       "Bash(npm install:*)",
       "mcp__context7__resolve-library-id",
-      "Bash(node -e \"\nconst YF = require\\('yahoo-finance2'\\).default;\nconst yf = new YF\\(\\);\nconsole.log\\('quote:', typeof yf.quote\\);\nconsole.log\\('quoteSummary:', typeof yf.quoteSummary\\);\nconsole.log\\('historical:', typeof yf.historical\\);\nconsole.log\\('chart:', typeof yf.chart\\);\n\" 2>&1)"
+      "Bash(node -e \"\nconst YF = require\\('yahoo-finance2'\\).default;\nconst yf = new YF\\(\\);\nconsole.log\\('quote:', typeof yf.quote\\);\nconsole.log\\('quoteSummary:', typeof yf.quoteSummary\\);\nconsole.log\\('historical:', typeof yf.historical\\);\nconsole.log\\('chart:', typeof yf.chart\\);\n\" 2>&1)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

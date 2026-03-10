@@ -179,12 +179,12 @@ app.get('/api/stock/:ticker/history', async (req, res) => {
   const config = PERIOD_MAP[period] ?? PERIOD_MAP['1y']
 
   try {
-    const result = await yahooFinance.historical(ticker.toUpperCase(), {
+    const result = await yahooFinance.chart(ticker.toUpperCase(), {
       period1: config.period1,
       interval: config.interval,
     })
 
-    const data = result.map((row) => ({
+    const data = (result.quotes ?? []).map((row) => ({
       time: row.date.toISOString().split('T')[0],
       open:   Number(row.open?.toFixed(2)  ?? 0),
       high:   Number(row.high?.toFixed(2)  ?? 0),
