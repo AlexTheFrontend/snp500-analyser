@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Search, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
 
 const QUICK_PICKS = [
@@ -40,7 +40,7 @@ export default function HomePage() {
           stocks, fast.
         </h1>
         <p className="text-text-secondary text-sm md:text-base max-w-lg mb-12 leading-relaxed">
-          10-year price history, fundamental metrics, and a value scoring algorithm
+          10 years of price history, fundamental metrics, and a value scoring algorithm
           that surfaces cheap stocks before the market notices.
         </p>
 
@@ -99,12 +99,12 @@ export default function HomePage() {
         </div>
 
         {/* Link to screener */}
-        <a
-          href="/screener"
+        <Link
+          to="/screener"
           className="mt-8 inline-flex items-center gap-2 text-xs text-accent-green/70 hover:text-accent-green transition-colors"
         >
           View full S&P 500 value screener <ArrowRight size={12} />
-        </a>
+        </Link>
       </div>
     </div>
   )

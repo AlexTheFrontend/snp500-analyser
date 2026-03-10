@@ -1,9 +1,9 @@
 import express from 'express'
 import cors from 'cors'
-import yahooFinance from 'yahoo-finance2'
+import YahooFinance from 'yahoo-finance2'
 import { SP500_VALUE_UNIVERSE, computeScore, getRating, type StockScore } from './sp500.js'
 
-yahooFinance.suppressNotices(['yahooSurvey'])
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
 
 const app = express()
 app.use(cors())
